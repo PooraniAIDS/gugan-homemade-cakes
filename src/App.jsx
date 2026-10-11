@@ -9,11 +9,11 @@ function App() {
   const [imagePreview, setImagePreview] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Automatically detect if current URL is /admin
+  // Detect path /admin
   const [isAdmin, setIsAdmin] = useState(window.location.pathname === '/admin');
 
   // Unga WhatsApp Number (With Country Code 91)
-  const PHONE_NUMBER = "919876543210"; // 👈 Ungaloda WhatsApp number-a inga maathiko da!
+  const PHONE_NUMBER = "919876543210";
 
   // Fetch Cakes from Firestore
   const fetchCakes = async () => {
@@ -36,7 +36,7 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Convert uploaded image to Base64
+  // Convert image to Base64
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -87,20 +87,20 @@ function App() {
     }
   };
 
-  // Switch View Helper
+  // Router Helper
   const navigateTo = (path) => {
     window.history.pushState({}, '', path);
     setIsAdmin(path === '/admin');
   };
 
-  // WhatsApp Order Redirect
+  // WhatsApp Redirect
   const handleOrderWhatsApp = (cakeTitle, cakePrice) => {
     const message = `Hello Gugan Homemade Cakes! 👋\nI would like to order: *${cakeTitle}*\nPrice: *₹${cakePrice}*.\nPlease let me know availability!`;
     const whatsappUrl = `https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
-  // Filtered Cakes for Search
+  // Search Filter
   const filteredCakes = cakes.filter(cake => 
     cake.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -111,13 +111,11 @@ function App() {
       {/* 1. CUSTOMER PAGE VIEW */}
       {!isAdmin ? (
         <div>
-          {/* HEADER */}
           <header style={{ textAlign: 'center', borderBottom: '2px dashed #f48fb1', paddingBottom: '20px', marginBottom: '25px' }}>
             <h1 style={{ color: '#d81b60', margin: 0, fontSize: '32px', fontWeight: 'bold' }}>Gugan Homemade Cakes 🎂</h1>
             <p style={{ margin: '8px 0 0', color: '#888', fontSize: '15px' }}>Freshly Baked Pure Homemade Goodness ❤️</p>
           </header>
 
-          {/* SEARCH BAR */}
           <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'center' }}>
             <input 
               type="text" 
@@ -164,7 +162,6 @@ function App() {
             </button>
           </header>
 
-          {/* ADD CAKE FORM */}
           <div style={{ background: '#fff0f5', padding: '20px', borderRadius: '12px', marginBottom: '35px', border: '1px solid #f8bbd0' }}>
             <h2 style={{ color: '#c2185b', marginTop: 0 }}>Add New Cake to Menu ➕</h2>
             <form onSubmit={handleAddCake} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -190,11 +187,42 @@ function App() {
             </form>
           </div>
 
-          {/* DELETE CAKES LIST */}
           <h2>Manage Existing Cakes (Delete) 🗑️</h2>
           {cakes.length === 0 ? (
             <p>No cakes added yet.</p>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
               {cakes.map(cake => (
-                <div key={cake.id} style={{ border: '1px solid #
+                <div key={cake.id} style={{ border: '1px solid #eee', borderRadius: '10px', overflow: 'hidden', padding: '12px', textAlign: 'center', background: '#fff' }}>
+                  <img src={cake.imageUrl} alt={cake.title} style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '8px' }} />
+                  <h3 style={{ margin: '10px 0 5px', fontSize: '16px' }}>{cake.title}</h3>
+                  <p style={{ color: '#d81b60', fontWeight: 'bold', fontSize: '18px', margin: '5px 0 10px' }}>₹{cake.price}</p>
+                  <button 
+                    onClick={() => handleDeleteCake(cake.id, cake.title)} 
+                    style={{ background: '#ff4d4d', color: 'white', border: 'none', padding: '8px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}
+                  >
+                    Delete Cake 🗑️
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* FOOTER WITH SECRET TRIGGER */}
+      <footer style={{ textAlign: 'center', marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #eee', color: '#888', fontSize: '13px' }}>
+        <span>© 2026 Gugan Homemade Cakes. All rights reserved</span>
+        <span 
+          onClick={() => navigateTo(isAdmin ? '/' : '/admin')} 
+          style={{ cursor: 'pointer', userSelect: 'none', paddingLeft: '2px' }}
+        >
+          .
+        </span>
+      </footer>
+
+    </div>
+  );
+}
+
+export default App;
