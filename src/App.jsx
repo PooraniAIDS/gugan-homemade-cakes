@@ -6,7 +6,8 @@ function App() {
   const [cakes, setCakes] = useState([]);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState(null); // File handle storage
+  const [imagePreview, setImagePreview] = useState(''); // Live thumbnail view
   const [isAdmin, setIsAdmin] = useState(window.location.pathname === '/admin');
 
   // Fetch Cakes from Firestore
@@ -23,19 +24,43 @@ function App() {
     fetchCakes();
   }, []);
 
-  // Add Cake (Admin Function)
+  // Convert uploaded image to Base64 (Text Format)
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // Size lock - 2MB
+        alert("Image should be less than 2MB!");
+        return;
+      }
+      setImageFile(file);
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result); // Base64 direct source
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Add Cake (Uploads Base64 image directly to Firebase)
   const handleAddCake = async (e) => {
     e.preventDefault();
-    if (!title || !price || !imageUrl) return alert("Fill all fields!");
+    if (!title || !price || !imagePreview) return alert("All fields including Image are required!");
     
     try {
       await addDoc(collection(db, "cakes"), {
         title,
         price: Number(price),
-        imageUrl
+        imageUrl: imagePreview // Safe Base64 string storage
       });
-      alert("Cake added successfully! 🎉");
-      window.location.href = "/";
+      alert("Own Cake Added Successful! 🎂🎉");
+      // Form fields Reset
+      setTitle('');
+      setPrice('');
+      setImageFile(null);
+      setImagePreview('');
+      setIsAdmin(false);
+      window.location.reload(); // Refresh display screen
     } catch (err) {
       alert("Error adding cake: " + err.message);
     }
@@ -60,11 +85,26 @@ function App() {
       {isAdmin ? (
         <div style={{ marginTop: '30px', background: '#fff0f5', padding: '20px', borderRadius: '8px' }}>
           <h2>Admin Panel - Add New Cake</h2>
-          <form onSubmit={handleAddCake} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <input type="text" placeholder="Cake Name" value={title} onChange={e => setTitle(e.target.value)} style={{ padding: '8px' }} />
-            <input type="number" placeholder="Price (₹)" value={price} onChange={e => setPrice(e.target.value)} style={{ padding: '8px' }} />
-            <input type="url" placeholder="Image Direct Link URL" value={imageUrl} onChange={e => setImageUrl(e.target.value)} style={{ padding: '8px' }} />
-            <button type="submit" style={{ background: '#4CAF50', color: 'white', border: 'none', padding: '10px', cursor: 'pointer' }}>Add Cake</button>
+          <form onSubmit={handleAddCake} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Cake Name:</label>
+              <input type="text" placeholder="Eg: Black Forest" value={title} onChange={e => setTitle(e.target.value)} style={{ padding: '8px', width: '97%' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Price (₹):</label>
+              <input type="number" placeholder="Eg: 550" value={price} onChange={e => setPrice(e.target.value)} style={{ padding: '8px', width: '97%' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Cake Photo (Unga Image Upload Pannalam):</label>
+              <input type="file" accept="image/*" onChange={handleImageChange} style={{ padding: '8px 0' }} />
+              {imagePreview && (
+                <div style={{ marginTop: '10px' }}>
+                  <p style={{ fontSize: '12px', color: '#555' }}>Preview Upload:</p>
+                  <img src={imagePreview} alt="Selected" style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #e91e63' }} />
+                </div>
+              )}
+            </div>
+            <button type="submit" style={{ background: '#4CAF50', color: 'white', border: 'none', padding: '12px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', borderRadius: '5px' }}>Add Cake 🚀</button>
           </form>
         </div>
       ) : (
