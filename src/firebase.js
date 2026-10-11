@@ -1,18 +1,21 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getAuth } from "firebase/auth";
 
+// Paste your Firebase Config keys here
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDwMSt2rBdrx8i2ELscCJhSvN11ZNPr0xg",
+  authDomain: "gugan-homemade-cakes.firebaseapp.com",
+  projectId: "gugan-homemade-cakes",
+  storageBucket: "gugan-homemade-cakes.firebasestorage.app",
+  messagingSenderId: "298911164261",
+  appId: "1:298911164261:web:c39dc36774ec33f7b7238c",
+  measurementId: "G-542MQSR6H6"
 };
 
+
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+export const auth = getAuth(app);
