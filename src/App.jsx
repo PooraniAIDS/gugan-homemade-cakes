@@ -12,7 +12,13 @@ function App() {
   // Cart State
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', address: '', notes: '' });
+  const [customerInfo, setCustomerInfo] = useState({ 
+    name: '', 
+    phone: '', 
+    address: '', 
+    notes: '',
+    paymentMethod: 'UPI Request' 
+  });
 
   // Admin Security State
   const [isAdmin, setIsAdmin] = useState(window.location.pathname === '/admin');
@@ -20,8 +26,8 @@ function App() {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Unga WhatsApp Number (With Country Code 91)
-  const PHONE_NUMBER = "919876543210"; // 👈 Ungaloda WhatsApp number-a inga maathiko da!
+  // Business WhatsApp Number (88258 35532)
+  const BUSINESS_PHONE = "918825835532"; 
 
   // Fetch Cakes from Firestore
   const fetchCakes = async () => {
@@ -130,7 +136,7 @@ function App() {
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-  // WHATSAPP CHECKOUT WITH ADDRESS
+  // WHATSAPP CHECKOUT WITH PAYMENT OPTION
   const handleCheckoutWhatsApp = (e) => {
     e.preventDefault();
     if (cart.length === 0) return alert("Your cart is empty!");
@@ -140,16 +146,23 @@ function App() {
 
     let itemsList = cart.map((item, index) => `${index + 1}. ${item.title} x ${item.qty} = ₹${item.price * item.qty}`).join('\n');
 
-    const message = `🎂 *NEW ORDER - GUGAN CAKES* 🎂\n\n` +
+    const message = `🎂 *NEW ORDER - GUGAN HOMEMADE CAKES* 🎂\n\n` +
       `👤 *Customer Name:* ${customerInfo.name}\n` +
       `📞 *Phone:* ${customerInfo.phone}\n` +
       `🏠 *Delivery Address:* ${customerInfo.address}\n` +
+      `💳 *Payment Preference:* ${customerInfo.paymentMethod}\n` +
       (customerInfo.notes ? `📝 *Notes:* ${customerInfo.notes}\n` : '') +
-      `\n🛒 *ORDER DETAILS:*\n${itemsList}\n\n` +
+      `\n🛒 *ORDER ITEMS:*\n${itemsList}\n\n` +
       `💰 *GRAND TOTAL:* ₹${cartTotal}\n\n` +
-      `Please confirm my order and share delivery timing! ❤️`;
+      `Please confirm order availability & share payment details (${customerInfo.paymentMethod})! ❤️`;
 
-    window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+    window.open(`https://wa.me/${BUSINESS_PHONE}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  // GENERAL ENQUIRY CHAT
+  const handleGeneralChat = () => {
+    const chatMessage = `Hello Gugan Homemade Cakes! 👋\nI have a query regarding cake designs and availability. Can we chat?`;
+    window.open(`https://wa.me/${BUSINESS_PHONE}?text=${encodeURIComponent(chatMessage)}`, '_blank');
   };
 
   // Router Helper
@@ -169,17 +182,26 @@ function App() {
       {!isAdmin ? (
         <div>
           {/* HEADER */}
-          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px dashed #f48fb1', paddingBottom: '15px', marginBottom: '25px' }}>
+          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px dashed #f48fb1', paddingBottom: '15px', marginBottom: '25px', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <h1 style={{ color: '#d81b60', margin: 0, fontSize: '28px', fontWeight: 'bold' }}>Gugan Homemade Cakes 🎂</h1>
               <p style={{ margin: '4px 0 0', color: '#888', fontSize: '14px' }}>Freshly Baked Pure Goodness ❤️</p>
             </div>
-            <button 
-              onClick={() => setIsCartOpen(!isCartOpen)}
-              style={{ background: '#d81b60', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' }}
-            >
-              🛒 Cart ({cart.reduce((sum, i) => sum + i.qty, 0)})
-            </button>
+            
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                onClick={handleGeneralChat}
+                style={{ background: '#25D366', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
+              >
+                Chat / Enquire 💬
+              </button>
+              <button 
+                onClick={() => setIsCartOpen(!isCartOpen)}
+                style={{ background: '#d81b60', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
+              >
+                🛒 Cart ({cart.reduce((sum, i) => sum + i.qty, 0)})
+              </button>
+            </div>
           </header>
 
           {/* SEARCH BAR */}
@@ -218,14 +240,19 @@ function App() {
 
           {/* SLIDING CART DRAWER */}
           {isCartOpen && (
-            <div style={{ position: 'fixed', top: 0, right: 0, width: '100%', maxWidth: '400px', height: '100vh', background: '#fff', boxShadow: '-5px 0 25px rgba(0,0,0,0.2)', padding: '20px', zIndex: 1000, overflowY: 'auto', boxSizing: 'border-box' }}>
+            <div style={{ position: 'fixed', top: 0, right: 0, width: '100%', maxWidth: '420px', height: '100vh', background: '#fff', boxShadow: '-5px 0 25px rgba(0,0,0,0.2)', padding: '20px', zIndex: 1000, overflowY: 'auto', boxSizing: 'border-box' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
-                <h2 style={{ margin: 0, color: '#d81b60' }}>Your Shopping Cart 🛒</h2>
+                <h2 style={{ margin: 0, color: '#d81b60' }}>Shopping Cart 🛒</h2>
                 <button onClick={() => setIsCartOpen(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer' }}>❌</button>
               </div>
 
               {cart.length === 0 ? (
-                <p style={{ marginTop: '30px', color: '#777' }}>Your cart is empty!</p>
+                <div style={{ textAlign: 'center', marginTop: '40px' }}>
+                  <p style={{ color: '#777' }}>Your cart is empty!</p>
+                  <button onClick={handleGeneralChat} style={{ background: '#25D366', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>
+                    Direct Chat via WhatsApp 💬
+                  </button>
+                </div>
               ) : (
                 <>
                   <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -244,15 +271,30 @@ function App() {
                     ))}
                   </div>
 
-                  <h3 style={{ textAlign: 'right', color: '#d81b60', margin: '20px 0 15px' }}>Total: ₹{cartTotal}</h3>
+                  <h3 style={{ textAlign: 'right', color: '#d81b60', margin: '20px 0 15px' }}>Total Amount: ₹{cartTotal}</h3>
 
-                  {/* CUSTOMER ADDRESS FORM */}
+                  {/* CUSTOMER CHECKOUT & PAYMENT SELECTION */}
                   <form onSubmit={handleCheckoutWhatsApp} style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#fff0f5', padding: '15px', borderRadius: '10px' }}>
-                    <h4 style={{ margin: '0 0 5px', color: '#c2185b' }}>Delivery Address Details 🏠</h4>
+                    <h4 style={{ margin: '0 0 5px', color: '#c2185b' }}>Delivery & Payment Details 🏠</h4>
+                    
                     <input type="text" placeholder="Your Name *" required value={customerInfo.name} onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }} />
                     <input type="tel" placeholder="Phone Number *" required value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }} />
-                    <textarea placeholder="Full Delivery Address *" required rows="3" value={customerInfo.address} onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }}></textarea>
-                    <input type="text" placeholder="Eggless / Delivery Time Note (Optional)" value={customerInfo.notes} onChange={e => setCustomerInfo({...customerInfo, notes: e.target.value})} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }} />
+                    <textarea placeholder="Full Delivery Address *" required rows="2" value={customerInfo.address} onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }}></textarea>
+                    
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px', color: '#444' }}>Payment Preference:</label>
+                      <select 
+                        value={customerInfo.paymentMethod} 
+                        onChange={e => setCustomerInfo({...customerInfo, paymentMethod: e.target.value})}
+                        style={{ width: '100%', padding: '8px', borderRadius: '5px', border: '1px solid #ccc', background: '#fff' }}
+                      >
+                        <option value="UPI Request (GPay/PhonePe)">Request UPI ID / QR Code</option>
+                        <option value="Pay via WhatsApp">Pay via WhatsApp Payment</option>
+                        <option value="Cash on Delivery">Cash on Delivery (COD)</option>
+                      </select>
+                    </div>
+
+                    <input type="text" placeholder="Notes (Eggless / Wording on cake)" value={customerInfo.notes} onChange={e => setCustomerInfo({...customerInfo, notes: e.target.value})} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }} />
 
                     <button type="submit" style={{ background: '#25D366', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', marginTop: '10px' }}>
                       Order via WhatsApp 💬
@@ -265,7 +307,7 @@ function App() {
         </div>
       ) : (
 
-        /* 2. ADMIN SECTION (PROTECTED WITH LOGIN) */
+        /* 2. ADMIN SECTION */
         <div>
           {!isLoggedIn ? (
             /* ADMIN LOGIN SCREEN */
@@ -299,7 +341,7 @@ function App() {
               </button>
             </div>
           ) : (
-            /* ADMIN DASHBOARD (AFTER LOGIN) */
+            /* ADMIN DASHBOARD */
             <div>
               <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '3px solid #d81b60', paddingBottom: '12px', marginBottom: '25px' }}>
                 <h1 style={{ color: '#d81b60', margin: 0, fontSize: '24px' }}>🔒 Admin Dashboard</h1>
@@ -317,7 +359,7 @@ function App() {
                 <form onSubmit={handleAddCake} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Cake Name:</label>
-                    <input type="text" placeholder="Eg: Red Velvet Cake" value={title} onChange={e => setTitle(e.target.value)} style={{ padding: '10px', width: '97%', borderRadius: '6px', border: '1px solid #ccc' }} />
+                    <input type="text" placeholder="Eg: Chocolate Truffle Cake" value={title} onChange={e => setTitle(e.target.value)} style={{ padding: '10px', width: '97%', borderRadius: '6px', border: '1px solid #ccc' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Price (₹):</label>
