@@ -17,7 +17,7 @@ function App() {
     phone: '', 
     address: '', 
     notes: '',
-    paymentMethod: 'UPI Request' 
+    paymentMethod: 'UPI Request (GPay/PhonePe)' 
   });
 
   // Admin Security State
@@ -290,7 +290,6 @@ function App() {
                       >
                         <option value="UPI Request (GPay/PhonePe)">Request UPI ID / QR Code</option>
                         <option value="Pay via WhatsApp">Pay via WhatsApp Payment</option>
-                        <option value="Cash on Delivery">Cash on Delivery (COD)</option>
                       </select>
                     </div>
 
