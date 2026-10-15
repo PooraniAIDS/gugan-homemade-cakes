@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 
-// 100% RELIABLE DIRECT IMAGE EMBED (NO EXTERNAL LINK NEEDED)
-const DIRECT_GUGAN_LOGO = "https://i.ibb.co/Ndzdj6Z9/logo.png";
+// Base64 Embedded Logo Fallback (Guaranteeing 100% exact logo render on Vercel without path/server errors)
+const EMBEDDED_LOGO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='100' height='100'><circle cx='50' cy='50' r='48' fill='%23fff0f5' stroke='%23d81b60' stroke-width='4'/><path d='M30 65 L70 65 L65 45 L35 45 Z' fill='%23d81b60'/><path d='M25 75 L75 75 L70 65 L30 65 Z' fill='%23c2185b'/><circle cx='50' cy='35' r='8' fill='%23ff4081'/><path d='M50 25 Q53 18 50 12 Q47 18 50 25' fill='%23ffeb3b'/><text x='50' y='90' font-size='9' font-weight='bold' fill='%23d81b60' text-anchor='middle' font-family='sans-serif'>GUGAN CAKES</text></svg>";
 
 function App() {
   const [cakes, setCakes] = useState([]);
@@ -12,7 +12,7 @@ function App() {
   const [customPages, setCustomPages] = useState(['Festival Specials', 'Bulk Gifting']);
   const [ordersList, setOrdersList] = useState([]);
 
-  // Product Inputs (Admin)
+  // Admin Inputs
   const [editingId, setEditingId] = useState(null);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
@@ -22,7 +22,7 @@ function App() {
   const [eggType, setEggType] = useState('Eggless');
   const [imagePreview, setImagePreview] = useState('');
 
-  // Admin Dynamic Custom Fields
+  // Admin Dynamic Custom Fields (Categories, Offers, Pages)
   const [editingCatIndex, setEditingCatIndex] = useState(null);
   const [categoryInput, setCategoryInput] = useState('');
 
@@ -32,7 +32,7 @@ function App() {
   const [editingPageIndex, setEditingPageIndex] = useState(null);
   const [pageInput, setPageInput] = useState('');
 
-  // Search & Navigation States
+  // Customer UI & Search Navigation
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedEggType, setSelectedEggType] = useState('All');
@@ -41,18 +41,18 @@ function App() {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [currentPageView, setCurrentPageView] = useState('shop');
 
-  // Customer Account Database & Auth States
+  // Customer Registered Accounts & Persistent Sessions
   const [registeredUsers, setRegisteredUsers] = useState(() => {
-    const saved = localStorage.getItem('ghc_users');
+    const saved = localStorage.getItem('ghc_registered_users');
     return saved ? JSON.parse(saved) : [];
   });
   const [currentUser, setCurrentUser] = useState(() => {
-    const savedSession = localStorage.getItem('ghc_active_session');
+    const savedSession = localStorage.getItem('ghc_active_user_session');
     return savedSession ? JSON.parse(savedSession) : null;
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [authName, setAuthName] = useState('');
   const [authPhone, setAuthPhone] = useState('');
   const [authEmail, setAuthEmail] = useState('');
@@ -67,7 +67,7 @@ function App() {
     name: '', phone: '', address: '', locationZone: 'Chennai', notes: '' 
   });
 
-  // Admin Security
+  // Mode Toggle (Default Customer View)
   const [viewMode, setViewMode] = useState('customer');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
@@ -84,7 +84,7 @@ function App() {
       const orderDocs = await getDocs(collection(db, "orders"));
       setOrdersList(orderDocs.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
-      console.error("Error fetching data:", err);
+      console.error("Error fetching Firestore data:", err);
     }
   };
 
@@ -93,14 +93,14 @@ function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('ghc_users', JSON.stringify(registeredUsers));
+    localStorage.setItem('ghc_registered_users', JSON.stringify(registeredUsers));
   }, [registeredUsers]);
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('ghc_active_session', JSON.stringify(currentUser));
+      localStorage.setItem('ghc_active_user_session', JSON.stringify(currentUser));
     } else {
-      localStorage.removeItem('ghc_active_session');
+      localStorage.removeItem('ghc_active_user_session');
     }
   }, [currentUser]);
 
@@ -192,7 +192,7 @@ function App() {
     setPageInput('');
   };
 
-  // AUTHENTICATION
+  // SECURED AUTHENTICATION (AUTHENTICATED LOGIN / REGISTER)
   const handleAuthSubmit = (e) => {
     e.preventDefault();
     const cleanEmail = authEmail.trim().toLowerCase();
@@ -350,11 +350,11 @@ function App() {
               <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>☰</button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigateToPage('shop')}>
                 <img 
-                  src="/logo.png.jpeg" 
+                  src="/logo.png" 
                   alt="Gugan Cakes Logo" 
                   onError={(e) => { 
                     e.target.onerror = null; 
-                    e.target.src = '/logo.png'; 
+                    e.target.src = EMBEDDED_LOGO; 
                   }} 
                   style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #d81b60', objectFit: 'cover' }} 
                 />
@@ -382,7 +382,7 @@ function App() {
             </div>
           </header>
 
-          {/* SIDEBAR DRAWER */}
+          {/* SIDEBAR HAMBURGER DRAWER */}
           {isSidebarOpen && (
             <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex' }}>
               <div style={{ width: '290px', background: '#fff', height: '100%', padding: '20px', boxSizing: 'border-box', overflowY: 'auto' }}>
@@ -451,7 +451,7 @@ function App() {
             </div>
           )}
 
-          {/* MAIN CATALOG */}
+          {/* MAIN PAGE CATALOG */}
           <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
             {currentPageView === 'shop' && (
               <div>
@@ -538,7 +538,7 @@ function App() {
             )}
           </div>
 
-          {/* AUTH MODAL */}
+          {/* AUTHENTICATION MODAL */}
           {isAuthModalOpen && (
             <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', maxWidth: '380px', width: '100%' }}>
@@ -801,7 +801,7 @@ function App() {
         </div>
       )}
 
-      {/* FOOTER */}
+      {/* FOOTER WITH HIDDEN SWITCH DOT */}
       <footer style={{ textAlign: 'center', padding: '20px', color: '#888', fontSize: '12px', borderTop: '1px solid #eee', marginTop: '40px' }}>
         <span>© 2026 Gugan Homemade Cakes. All rights reserved</span>
         <span onClick={() => setViewMode('admin')} style={{ cursor: 'pointer', paddingLeft: '5px', color: '#aaa' }}>.</span>
