@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 
-// 🚀 DIRECT MODULE IMPORT - Guarantees logo is bundled into Vercel build with zero path/404 errors
-import mainLogo from './assets/logo.png';
+// 🎯 YOUR EXACT GUGAN HOMEMADE CAKES DIRECT LOGO URL
+const DIRECT_LOGO_URL = "https://i.ibb.co/JwPw7R5v/logo.jpg";
 
 function App() {
   const [cakes, setCakes] = useState([]);
@@ -32,7 +32,7 @@ function App() {
   const [editingPageIndex, setEditingPageIndex] = useState(null);
   const [pageInput, setPageInput] = useState('');
 
-  // Customer Navigation & UI States
+  // Customer UI & Search Navigation
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedEggType, setSelectedEggType] = useState('All');
@@ -41,7 +41,7 @@ function App() {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [currentPageView, setCurrentPageView] = useState('shop');
 
-  // Customer Account Database & Auth States
+  // Customer Registered Accounts & Persistent Sessions
   const [registeredUsers, setRegisteredUsers] = useState(() => {
     const saved = localStorage.getItem('ghc_registered_users');
     return saved ? JSON.parse(saved) : [];
@@ -344,13 +344,13 @@ function App() {
       {/* 1. CUSTOMER STOREFRONT */}
       {viewMode === 'customer' ? (
         <div>
-          {/* HEADER WITH BUNDLED LOGO */}
+          {/* HEADER WITH EXACT DIRECT LOGO URL */}
           <header style={{ background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', padding: '12px 20px', position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>☰</button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigateToPage('shop')}>
                 <img 
-                  src={mainLogo} 
+                  src={DIRECT_LOGO_URL} 
                   alt="Gugan Homemade Cakes Logo" 
                   style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #d81b60', objectFit: 'cover' }} 
                 />
