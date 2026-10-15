@@ -353,7 +353,7 @@ function App() {
                   alt="Gugan Cakes Logo" 
                   onError={(e) => { 
                     e.target.onerror = null; 
-                    e.target.src = '/logo.png.jpeg'; 
+                    e.target.src = 'logo.png'; 
                   }} 
                   style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #d81b60', objectFit: 'cover' }} 
                 />
