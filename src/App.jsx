@@ -349,14 +349,10 @@ function App() {
               <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>☰</button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigateToPage('shop')}>
                 <img 
-                  src="/logo.png" 
-                  alt="Gugan Cakes Logo" 
-                  onError={(e) => { 
-                    e.target.onerror = null; 
-                    e.target.src = 'logo.png'; 
-                  }} 
-                  style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #d81b60', objectFit: 'cover' }} 
-                />
+                 src="/logo.png" 
+                 alt="Gugan Homemade Cakes Logo" 
+                 style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #d81b60', objectFit: 'cover' }} 
+               />
                 <div>
                   <h2 style={{ margin: 0, fontSize: '18px', color: '#d81b60', fontWeight: 'bold' }}>Gugan Homemade Cakes</h2>
                   <p style={{ margin: 0, fontSize: '11px', color: '#777' }}>By Gayathri Devi</p>
