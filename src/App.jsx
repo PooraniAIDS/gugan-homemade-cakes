@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 
-// 100% GUARANTEED INLINE LOGO EMBLEM (NO EXTERNAL FILE DEPENDENCY FOR VERCEL)
-const GUGAN_LOGO_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="48" fill="%23fff0f5" stroke="%23d81b60" stroke-width="4"/><path d="M30 65 L70 65 L65 45 L35 45 Z" fill="%23d81b60"/><path d="M25 75 L75 75 L70 65 L30 65 Z" fill="%23c2185b"/><circle cx="50" cy="35" r="8" fill="%23ff4081"/><path d="M50 25 Q53 18 50 12 Q47 18 50 25" fill="%23ffeb3b"/><text x="50" y="90" font-size="10" font-weight="bold" fill="%23d81b60" text-anchor="middle" font-family="sans-serif">GUGAN</text></svg>`;
+// 🚨 REPLACE THIS WITH YOUR COPIED "COPY IMAGE ADDRESS" LINK FROM IMGBB
+const LOGO_URL = "https://i.ibb.co/xS3gC3Y/logo.png"; 
 
 function App() {
   const [cakes, setCakes] = useState([]);
@@ -344,17 +344,17 @@ function App() {
       {/* 1. CUSTOMER STOREFRONT */}
       {viewMode === 'customer' ? (
         <div>
-          {/* HEADER WITH 100% RELIABLE EMBEDDED LOGO */}
+          {/* HEADER */}
           <header style={{ background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', padding: '12px 20px', position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>☰</button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigateToPage('shop')}>
                 <img 
-                  src="/logo.png" 
+                  src={LOGO_URL} 
                   alt="Gugan Cakes Logo" 
                   onError={(e) => { 
                     e.target.onerror = null; 
-                    e.target.src = GUGAN_LOGO_SVG; 
+                    e.target.src = '/logo.png'; 
                   }} 
                   style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #d81b60', objectFit: 'cover' }} 
                 />
@@ -538,7 +538,7 @@ function App() {
             )}
           </div>
 
-          {/* CUSTOMER AUTHENTICATION MODAL */}
+          {/* AUTH MODAL */}
           {isAuthModalOpen && (
             <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', maxWidth: '380px', width: '100%' }}>
