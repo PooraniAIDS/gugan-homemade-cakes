@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 
+// 100% GUARANTEED INLINE LOGO EMBLEM (NO EXTERNAL FILE DEPENDENCY FOR VERCEL)
+const GUGAN_LOGO_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="48" fill="%23fff0f5" stroke="%23d81b60" stroke-width="4"/><path d="M30 65 L70 65 L65 45 L35 45 Z" fill="%23d81b60"/><path d="M25 75 L75 75 L70 65 L30 65 Z" fill="%23c2185b"/><circle cx="50" cy="35" r="8" fill="%23ff4081"/><path d="M50 25 Q53 18 50 12 Q47 18 50 25" fill="%23ffeb3b"/><text x="50" y="90" font-size="10" font-weight="bold" fill="%23d81b60" text-anchor="middle" font-family="sans-serif">GUGAN</text></svg>`;
+
 function App() {
   const [cakes, setCakes] = useState([]);
   const [categories, setCategories] = useState(['Offers', '300gms Brownies', 'Assorted Tub', 'Birthday Slabs', 'Blondie']);
@@ -49,7 +52,7 @@ function App() {
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+  const [authMode, setAuthMode] = useState('login');
   const [authName, setAuthName] = useState('');
   const [authPhone, setAuthPhone] = useState('');
   const [authEmail, setAuthEmail] = useState('');
@@ -89,12 +92,10 @@ function App() {
     fetchData();
   }, []);
 
-  // Save Registered Users
   useEffect(() => {
     localStorage.setItem('ghc_users', JSON.stringify(registeredUsers));
   }, [registeredUsers]);
 
-  // Save Active Session
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('ghc_active_session', JSON.stringify(currentUser));
@@ -343,29 +344,20 @@ function App() {
       {/* 1. CUSTOMER STOREFRONT */}
       {viewMode === 'customer' ? (
         <div>
-          {/* HEADER WITH CLEAN LOGO PATH */}
+          {/* HEADER WITH 100% RELIABLE EMBEDDED LOGO */}
           <header style={{ background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', padding: '12px 20px', position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>☰</button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigateToPage('shop')}>
-               {/* PERMANENT CLOUD LOGO FOR VERCEL & LOCALHOST */}
-<img 
-  src="/logo.png" 
-  alt="Gugan Homemade Cakes Logo" 
-  onError={(e) => { 
-    e.target.onerror = null; 
-    // Fallback direct high-res bakery emblem if local file is unreadable on Vercel
-    e.target.src = 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=120&q=80';
-  }} 
-  style={{ 
-    width: '48px', 
-    height: '48px', 
-    borderRadius: '50%', 
-    border: '2px solid #d81b60', 
-    objectFit: 'cover',
-    background: '#fff0f5'
-  }} 
-/>
+                <img 
+                  src="/logo.png" 
+                  alt="Gugan Cakes Logo" 
+                  onError={(e) => { 
+                    e.target.onerror = null; 
+                    e.target.src = GUGAN_LOGO_SVG; 
+                  }} 
+                  style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #d81b60', objectFit: 'cover' }} 
+                />
                 <div>
                   <h2 style={{ margin: 0, fontSize: '18px', color: '#d81b60', fontWeight: 'bold' }}>Gugan Homemade Cakes</h2>
                   <p style={{ margin: 0, fontSize: '11px', color: '#777' }}>By Gayathri Devi</p>
@@ -390,7 +382,7 @@ function App() {
             </div>
           </header>
 
-          {/* SIDEBAR HAMBURGER MENU DRAWER */}
+          {/* SIDEBAR DRAWER */}
           {isSidebarOpen && (
             <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex' }}>
               <div style={{ width: '290px', background: '#fff', height: '100%', padding: '20px', boxSizing: 'border-box', overflowY: 'auto' }}>
@@ -459,7 +451,7 @@ function App() {
             </div>
           )}
 
-          {/* MAIN PAGE CATALOG */}
+          {/* MAIN CATALOG */}
           <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
             {currentPageView === 'shop' && (
               <div>
@@ -586,7 +578,7 @@ function App() {
             </div>
           )}
 
-          {/* CUSTOMER PROFILE MODAL */}
+          {/* PROFILE MODAL */}
           {isProfileOpen && currentUser && (
             <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
               <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', maxWidth: '500px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
@@ -672,7 +664,7 @@ function App() {
         </div>
       ) : (
 
-        /* 2. ADMIN DASHBOARD */
+        /* 2. ADMIN DASHBOARD FOR GAYATHRI DEVI */
         <div style={{ maxWidth: '950px', margin: '0 auto', padding: '20px' }}>
           {!isLoggedIn ? (
             <div style={{ maxWidth: '380px', margin: '60px auto', padding: '30px', background: '#fff0f5', borderRadius: '15px', textAlign: 'center' }}>
