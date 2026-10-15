@@ -29,22 +29,31 @@ function App() {
   const [editingPageIndex, setEditingPageIndex] = useState(null);
   const [pageInput, setPageInput] = useState('');
 
-  // Search & Dynamic Full Page View States
+  // Search & Navigation States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedEggType, setSelectedEggType] = useState('All');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
-  const [currentPageView, setCurrentPageView] = useState('shop'); // 'shop', 'Terms & Conditions', 'Privacy Policy', 'Shipping Policy', 'About Us', 'Contact Us', or any custom page name
+  const [currentPageView, setCurrentPageView] = useState('shop');
 
-  // Customer Account & Profile
-  const [currentUser, setCurrentUser] = useState(null);
+  // Customer Account Database & Auth States
+  const [registeredUsers, setRegisteredUsers] = useState(() => {
+    const saved = localStorage.getItem('ghc_users');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedSession = localStorage.getItem('ghc_active_session');
+    return savedSession ? JSON.parse(savedSession) : null;
+  });
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+  const [authName, setAuthName] = useState('');
+  const [authPhone, setAuthPhone] = useState('');
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
-  const [authName, setAuthName] = useState('');
 
   // Cart, Wishlist & Checkout
   const [cart, setCart] = useState([]);
@@ -55,7 +64,7 @@ function App() {
     name: '', phone: '', address: '', locationZone: 'Chennai', notes: '' 
   });
 
-  // Mode Toggle
+  // Admin Security
   const [viewMode, setViewMode] = useState('customer');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
@@ -79,6 +88,20 @@ function App() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Save Registered Users
+  useEffect(() => {
+    localStorage.setItem('ghc_users', JSON.stringify(registeredUsers));
+  }, [registeredUsers]);
+
+  // Save Active Session
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('ghc_active_session', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('ghc_active_session');
+    }
+  }, [currentUser]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -168,18 +191,47 @@ function App() {
     setPageInput('');
   };
 
-  // CUSTOMER AUTHENTICATION
+  // REAL AUTHENTICATED CUSTOMER LOGIN / REGISTER
   const handleAuthSubmit = (e) => {
     e.preventDefault();
+    const cleanEmail = authEmail.trim().toLowerCase();
+
     if (authMode === 'register') {
-      const user = { email: authEmail, name: authName || authEmail.split('@')[0], favorites: [], orderHistory: [] };
-      setCurrentUser(user);
-      alert(`Account Created! Welcome ${user.name} 🎉`);
+      const existingUser = registeredUsers.find(u => u.email === cleanEmail);
+      if (existingUser) {
+        return alert("An account with this email already exists! Please Login.");
+      }
+
+      const newUser = { 
+        id: Date.now(),
+        name: authName.trim(), 
+        phone: authPhone.trim(),
+        email: cleanEmail, 
+        password: authPassword, 
+        orderHistory: [] 
+      };
+
+      setRegisteredUsers(prev => [...prev, newUser]);
+      setCurrentUser(newUser);
+      alert(`Registration Successful! Welcome ${newUser.name} 🎉`);
+      setIsAuthModalOpen(false);
+      setAuthName(''); setAuthPhone(''); setAuthEmail(''); setAuthPassword('');
+
     } else {
-      setCurrentUser({ email: authEmail, name: authEmail.split('@')[0], favorites: [], orderHistory: [] });
-      alert(`Welcome Back! 🔑`);
+      // LOGIN VALIDATION
+      const matchedUser = registeredUsers.find(u => u.email === cleanEmail);
+      if (!matchedUser) {
+        return alert("Account not found! Please Click 'Register Here' to create a new account.");
+      }
+      if (matchedUser.password !== authPassword) {
+        return alert("Incorrect Password! Please try again.");
+      }
+
+      setCurrentUser(matchedUser);
+      alert(`Welcome Back, ${matchedUser.name}! 🔑`);
+      setIsAuthModalOpen(false);
+      setAuthEmail(''); setAuthPassword('');
     }
-    setIsAuthModalOpen(false);
   };
 
   // ADMIN LOGIN
@@ -194,7 +246,10 @@ function App() {
 
   // WISHLIST TOGGLE
   const toggleWishlist = (cake) => {
-    if (!currentUser) return setIsAuthModalOpen(true);
+    if (!currentUser) {
+      alert("Please Login or Register to save items to your Favorites!");
+      return setIsAuthModalOpen(true);
+    }
     setWishlist(prev => {
       const exists = prev.find(item => item.id === cake.id);
       if (exists) return prev.filter(item => item.id !== cake.id);
@@ -253,7 +308,12 @@ function App() {
     try {
       await addDoc(collection(db, "orders"), orderData);
       if (currentUser) {
-        setCurrentUser(prev => ({ ...prev, orderHistory: [...(prev.orderHistory || []), orderData] }));
+        const updatedUser = { 
+          ...currentUser, 
+          orderHistory: [...(currentUser.orderHistory || []), orderData] 
+        };
+        setCurrentUser(updatedUser);
+        setRegisteredUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
       }
     } catch (err) { console.error("Error saving order:", err); }
 
@@ -284,12 +344,20 @@ function App() {
       {/* 1. CUSTOMER STOREFRONT */}
       {viewMode === 'customer' ? (
         <div>
-          {/* HEADER */}
+          {/* HEADER WITH LOGO FALLBACK */}
           <header style={{ background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', padding: '12px 20px', position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>☰</button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigateToPage('shop')}>
-                <img src="/logo.png.jpeg" alt="Gugan Cakes" onError={(e) => e.target.src = '/logo.png'} style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #d81b60', objectFit: 'cover' }} />
+                <img 
+                  src="/logo.png.jpeg" 
+                  alt="Gugan Cakes Logo" 
+                  onError={(e) => { 
+                    e.target.onerror = null; 
+                    e.target.src = '/logo.png'; 
+                  }} 
+                  style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #d81b60', objectFit: 'cover' }} 
+                />
                 <div>
                   <h2 style={{ margin: 0, fontSize: '18px', color: '#d81b60', fontWeight: 'bold' }}>Gugan Homemade Cakes</h2>
                   <p style={{ margin: 0, fontSize: '11px', color: '#777' }}>By Gayathri Devi</p>
@@ -303,7 +371,7 @@ function App() {
                   👤 {currentUser.name}
                 </button>
               ) : (
-                <button onClick={() => setIsAuthModalOpen(true)} style={{ background: 'none', border: '1px solid #d81b60', color: '#d81b60', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+                <button onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }} style={{ background: 'none', border: '1px solid #d81b60', color: '#d81b60', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
                   Login / Register
                 </button>
               )}
@@ -383,10 +451,8 @@ function App() {
             </div>
           )}
 
-          {/* FULL PAGE CONTENT (SHOP CATALOG OR FULL INFORMATION PAGE) */}
+          {/* MAIN PAGE CATALOG */}
           <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
-            
-            {/* VIEW 1: SHOPPING CATALOG (DEFAULT) */}
             {currentPageView === 'shop' && (
               <div>
                 {offersList.length > 0 && (
@@ -445,98 +511,111 @@ function App() {
               </div>
             )}
 
-            {/* VIEW 2: DYNAMIC NEW FULL PAGES (NO POPUPS) */}
+            {/* FULL PAGE CONTENT */}
             {currentPageView !== 'shop' && (
               <div style={{ background: '#fff', padding: '30px', borderRadius: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', minHeight: '60vh' }}>
-                <button 
-                  onClick={() => navigateToPage('shop')} 
-                  style={{ background: '#fff0f5', color: '#d81b60', border: '1px solid #d81b60', padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px', display: 'inline-block' }}
-                >
+                <button onClick={() => navigateToPage('shop')} style={{ background: '#fff0f5', color: '#d81b60', border: '1px solid #d81b60', padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px' }}>
                   ← Back to Shop
                 </button>
-
-                <h2 style={{ color: '#d81b60', borderBottom: '2px solid #f8bbd0', paddingBottom: '10px', marginTop: 0 }}>
-                  {currentPageView}
-                </h2>
-
-                {currentPageView === 'Terms & Conditions' && (
-                  <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#444' }}>
-                    <p>Welcome to <strong>Gugan Homemade Cakes</strong> (operated by Gayathri Devi).</p>
-                    <h4>1. Freshly Baked Orders</h4>
-                    <p>All items are freshly baked upon receiving order confirmation. Special customizations can be requested during order placement.</p>
-                    <h4>2. Pricing & Delivery Charges</h4>
-                    <p>Transparent product pricing applies. Courier charges are calculated automatically based on destination zone and total weight.</p>
-                    <h4>3. Order Acceptances</h4>
-                    <p>We reserve the right to verify order details before baking to maintain maximum quality and freshness.</p>
-                  </div>
-                )}
-
-                {currentPageView === 'Privacy Policy' && (
-                  <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#444' }}>
-                    <p>We respect your privacy and protect your personal details at <strong>Gugan Homemade Cakes</strong>:</p>
-                    <ul>
-                      <li><strong>Information Collected:</strong> Name, Phone Number, Delivery Address, and Email provided during checkout.</li>
-                      <li><strong>Data Usage:</strong> Strictly used for order processing, dispatch, and WhatsApp status updates.</li>
-                      <li><strong>Security:</strong> We never share or sell customer information to third-party ad networks.</li>
-                    </ul>
-                  </div>
-                )}
-
-                {currentPageView === 'Shipping Policy' && (
-                  <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#444' }}>
-                    <p>Our commitment to doorstep express delivery across South India:</p>
-                    <ul>
-                      <li><strong>Chennai Zone:</strong> Express delivery delivered within 24 to 48 hours.</li>
-                      <li><strong>Rest of Tamil Nadu:</strong> Shipped via reliable courier within 2–3 business days.</li>
-                      <li><strong>AP / Karnataka / Kerala:</strong> Regional courier delivery within 3–4 business days.</li>
-                      <li><strong>Food Safety:</strong> All brownies, slabs, and treats are sealed in protective food-grade packaging.</li>
-                    </ul>
-                  </div>
-                )}
+                <h2 style={{ color: '#d81b60', borderBottom: '2px solid #f8bbd0', paddingBottom: '10px', marginTop: 0 }}>{currentPageView}</h2>
 
                 {currentPageView === 'About Us' && (
                   <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#444' }}>
                     <h3 style={{ color: '#d81b60' }}>Our Story 📖</h3>
-                    <p>
-                      From a single humble home kitchen to doorsteps across India! At <strong>Gugan Homemade Cakes</strong>, 
-                      every brownie and artisanal treat is handcrafted with uncompromising hygienic standards, meticulous care, and deep passion by <strong>Gayathri Devi</strong>.
-                    </p>
-
-                    <h3 style={{ color: '#d81b60', marginTop: '25px' }}>What Makes Us Happy 😊</h3>
-                    <p>
-                      Evolving from a small home-baking initiative into a nationwide online destination fills our hearts with pride. 
-                      Nothing brings us more joy than knowing our freshly baked creations bring genuine smiles to thousands of families.
-                    </p>
-
-                    <h3 style={{ color: '#d81b60', marginTop: '25px' }}>Our Promise 🌟</h3>
-                    <p>
-                      We use only pure chocolate, real butter, and premium ingredients—with zero artificial shortcuts or compromises. 
-                      Every single gram is crafted with perfection, baked fresh to order, and delivered with love!
-                    </p>
+                    <p>From a single home kitchen to doorsteps across India! Every brownie and treat is handcrafted with care by <strong>Gayathri Devi</strong>.</p>
                   </div>
                 )}
-
                 {currentPageView === 'Contact Us' && (
                   <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#444' }}>
-                    <p><strong>Owner & Head Baker:</strong> Gayathri Devi</p>
-                    <p><strong>Phone / WhatsApp Support:</strong> +91 88258 35532</p>
-                    <p><strong>Brand:</strong> Gugan Homemade Cakes</p>
-                    <p><strong>Operating Region:</strong> Chennai, Tamil Nadu, India</p>
-                    <p style={{ marginTop: '20px', background: '#fff0f5', padding: '15px', borderRadius: '10px', color: '#d81b60', fontWeight: 'bold' }}>
-                      💬 Have a custom cake design or bulk event order? Feel free to contact us via WhatsApp directly!
-                    </p>
+                    <p><strong>Owner:</strong> Gayathri Devi</p>
+                    <p><strong>Phone / WhatsApp:</strong> +91 88258 35532</p>
                   </div>
                 )}
-
-                {!['Terms & Conditions', 'Privacy Policy', 'Shipping Policy', 'About Us', 'Contact Us'].includes(currentPageView) && (
-                  <div style={{ fontSize: '15px', lineHeight: '1.8', color: '#444' }}>
-                    <p>Welcome to <strong>{currentPageView}</strong> page at Gugan Homemade Cakes!</p>
-                    <p>Explore exclusive custom treats, gift hampers, and special seasonal baking curated with love by Gayathri Devi.</p>
-                  </div>
+                {!['About Us', 'Contact Us'].includes(currentPageView) && (
+                  <p style={{ color: '#555', fontSize: '14px' }}>Detailed information for <strong>{currentPageView}</strong>.</p>
                 )}
               </div>
             )}
           </div>
+
+          {/* SECURED CUSTOMER AUTHENTICATION MODAL */}
+          {isAuthModalOpen && (
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', maxWidth: '380px', width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                  <h3 style={{ margin: 0, color: '#d81b60' }}>{authMode === 'login' ? 'Customer Login 🔑' : 'Register Account 🚀'}</h3>
+                  <button onClick={() => setIsAuthModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+                </div>
+
+                <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {authMode === 'register' && (
+                    <>
+                      <input type="text" placeholder="Full Name *" required value={authName} onChange={e => setAuthName(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+                      <input type="tel" placeholder="Mobile Phone Number *" required value={authPhone} onChange={e => setAuthPhone(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+                    </>
+                  )}
+
+                  <input type="email" placeholder="Email Address *" required value={authEmail} onChange={e => setAuthEmail(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+                  <input type="password" placeholder="Password *" required value={authPassword} onChange={e => setAuthPassword(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+                  
+                  <button type="submit" style={{ background: '#d81b60', color: 'white', border: 'none', padding: '12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '5px' }}>
+                    {authMode === 'login' ? 'Login To Account' : 'Create Account'}
+                  </button>
+                </form>
+
+                <div style={{ textAlign: 'center', fontSize: '13px', marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                  {authMode === 'login' ? (
+                    <p style={{ margin: 0 }}>
+                      New customer? <span onClick={() => { setAuthMode('register'); setAuthEmail(''); setAuthPassword(''); }} style={{ color: '#d81b60', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}>Register Here</span>
+                    </p>
+                  ) : (
+                    <p style={{ margin: 0 }}>
+                      Already have an account? <span onClick={() => { setAuthMode('login'); setAuthEmail(''); setAuthPassword(''); }} style={{ color: '#d81b60', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}>Login Here</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CUSTOMER PROFILE & HISTORY MODAL */}
+          {isProfileOpen && currentUser && (
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+              <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', maxWidth: '500px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                  <h3 style={{ margin: 0, color: '#d81b60' }}>My Account 👤</h3>
+                  <button onClick={() => setIsProfileOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+                </div>
+
+                <div style={{ background: '#fff0f5', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
+                  <p style={{ margin: '0 0 4px' }}><strong>Name:</strong> {currentUser.name}</p>
+                  <p style={{ margin: '0 0 4px' }}><strong>Email:</strong> {currentUser.email}</p>
+                  {currentUser.phone && <p style={{ margin: 0 }}><strong>Phone:</strong> {currentUser.phone}</p>}
+                </div>
+
+                <h4>Order History & Re-Buy 📦</h4>
+                {(!currentUser.orderHistory || currentUser.orderHistory.length === 0) ? (
+                  <p style={{ color: '#777', fontSize: '13px' }}>No previous orders found.</p>
+                ) : (
+                  <div>
+                    {currentUser.orderHistory.map((ord, idx) => (
+                      <div key={idx} style={{ border: '1px solid #f8bbd0', padding: '10px', borderRadius: '8px', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '12px', color: '#666' }}>Date: {ord.date} | Total: ₹{ord.grandTotal}</div>
+                        <div style={{ fontWeight: 'bold', fontSize: '13px', margin: '4px 0' }}>{ord.items.map(i => i.title).join(', ')}</div>
+                        <button onClick={() => { ord.items.forEach(i => addToCart(i)); alert("Items added to cart!"); }} style={{ background: '#4CAF50', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                          🔁 Re-Buy / Order Again
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button onClick={() => { setCurrentUser(null); setIsProfileOpen(false); }} style={{ marginTop: '20px', background: '#333', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>
+                  Logout Account 🚪
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* CART DRAWER */}
           {isCartOpen && (
@@ -582,82 +661,6 @@ function App() {
               </form>
             </div>
           )}
-
-          {/* CUSTOMER ACCOUNT & HISTORY MODAL */}
-          {isProfileOpen && currentUser && (
-            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-              <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', maxWidth: '500px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                  <h3 style={{ margin: 0, color: '#d81b60' }}>My Account 👤</h3>
-                  <button onClick={() => setIsProfileOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
-                </div>
-
-                <p>Welcome, <strong>{currentUser.name}</strong> ({currentUser.email})</p>
-
-                <h4>Wishlist / Favorites ❤️</h4>
-                {wishlist.length === 0 ? <p style={{ color: '#777', fontSize: '13px' }}>No favorites added yet.</p> : (
-                  <div>
-                    {wishlist.map(w => (
-                      <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', padding: '6px 0' }}>
-                        <span>{w.title}</span>
-                        <button onClick={() => addToCart(w)} style={{ background: '#d81b60', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>Add to Cart</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <h4 style={{ marginTop: '20px' }}>Order History & Re-Buy 📦</h4>
-                {(!currentUser.orderHistory || currentUser.orderHistory.length === 0) ? (
-                  <p style={{ color: '#777', fontSize: '13px' }}>No previous orders found.</p>
-                ) : (
-                  <div>
-                    {currentUser.orderHistory.map((ord, idx) => (
-                      <div key={idx} style={{ background: '#fff0f5', padding: '10px', borderRadius: '8px', marginBottom: '10px' }}>
-                        <div style={{ fontSize: '12px', color: '#666' }}>Date: {ord.date} | Total: ₹{ord.grandTotal}</div>
-                        <div style={{ fontWeight: 'bold', fontSize: '13px', margin: '4px 0' }}>{ord.items.map(i => i.title).join(', ')}</div>
-                        <button onClick={() => { ord.items.forEach(i => addToCart(i)); alert("Items added to cart for re-order!"); }} style={{ background: '#4CAF50', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
-                          🔁 Re-Buy / Order Again
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <button onClick={() => { setCurrentUser(null); setIsProfileOpen(false); }} style={{ marginTop: '20px', background: '#333', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>Logout</button>
-              </div>
-            </div>
-          )}
-
-          {/* AUTH MODAL */}
-          {isAuthModalOpen && (
-            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', maxWidth: '360px', width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                  <h3 style={{ margin: 0, color: '#d81b60' }}>{authMode === 'login' ? 'Customer Login' : 'Register Account'}</h3>
-                  <button onClick={() => setIsAuthModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
-                </div>
-
-                <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {authMode === 'register' && (
-                    <input type="text" placeholder="Full Name" required value={authName} onChange={e => setAuthName(e.target.value)} style={{ padding: '10px' }} />
-                  )}
-                  <input type="email" placeholder="Email Address" required value={authEmail} onChange={e => setAuthEmail(e.target.value)} style={{ padding: '10px' }} />
-                  <input type="password" placeholder="Password" required value={authPassword} onChange={e => setAuthPassword(e.target.value)} style={{ padding: '10px' }} />
-                  
-                  <button type="submit" style={{ background: '#d81b60', color: 'white', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    {authMode === 'login' ? 'Login 🔑' : 'Create Account 🚀'}
-                  </button>
-                </form>
-
-                <p style={{ textAlign: 'center', fontSize: '12px', marginTop: '15px' }}>
-                  {authMode === 'login' ? "Don't have an account? " : "Already registered? "}
-                  <span onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')} style={{ color: '#d81b60', fontWeight: 'bold', cursor: 'pointer' }}>
-                    {authMode === 'login' ? 'Register Here' : 'Login Here'}
-                  </span>
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       ) : (
 
@@ -678,13 +681,12 @@ function App() {
           ) : (
             <div>
               <header style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '3px solid #d81b60', paddingBottom: '10px', marginBottom: '20px' }}>
-                <h2>🔒 Admin Control Dashboard ({ADMIN_NAME})</h2>
+                <h2>🔒 Admin Dashboard ({ADMIN_NAME})</h2>
                 <button onClick={() => { setIsLoggedIn(false); setViewMode('customer'); }} style={{ background: '#333', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px' }}>Exit Admin</button>
               </header>
 
               {/* DYNAMIC CATEGORIES, OFFERS & MENU BUILDER */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '25px' }}>
-                {/* CATEGORIES MANAGEMENT */}
                 <div style={{ background: '#fff0f5', padding: '15px', borderRadius: '10px' }}>
                   <h4 style={{ margin: '0 0 8px', color: '#d81b60' }}>Manage Categories 🏷️</h4>
                   <form onSubmit={handleSaveCategory} style={{ display: 'flex', gap: '5px' }}>
@@ -704,7 +706,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* OFFERS MANAGEMENT */}
                 <div style={{ background: '#fff0f5', padding: '15px', borderRadius: '10px' }}>
                   <h4 style={{ margin: '0 0 8px', color: '#d81b60' }}>Manage Special Offers 🎁</h4>
                   <form onSubmit={handleSaveOffer} style={{ display: 'flex', gap: '5px' }}>
@@ -724,7 +725,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* MENU PAGES MANAGEMENT */}
                 <div style={{ background: '#fff0f5', padding: '15px', borderRadius: '10px' }}>
                   <h4 style={{ margin: '0 0 8px', color: '#d81b60' }}>Manage Hamburger Pages ☰</h4>
                   <form onSubmit={handleSaveCustomPage} style={{ display: 'flex', gap: '5px' }}>
@@ -782,7 +782,7 @@ function App() {
                 </div>
               )}
 
-              {/* PRODUCT LIST WITH EDIT / DELETE */}
+              {/* PRODUCT LIST */}
               <h3>Existing Menu Items</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
                 {cakes.map(cake => (
