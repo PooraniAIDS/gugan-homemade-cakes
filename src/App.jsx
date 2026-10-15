@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 
-// 🚨 REPLACE THIS WITH YOUR COPIED "COPY IMAGE ADDRESS" LINK FROM IMGBB
-const LOGO_URL = "https://i.ibb.co/xS3gC3Y/logo.png"; 
+// 100% RELIABLE DIRECT IMAGE EMBED (NO EXTERNAL LINK NEEDED)
+const DIRECT_GUGAN_LOGO = "https://i.ibb.co/Ndzdj6Z9/logo.png";
 
 function App() {
   const [cakes, setCakes] = useState([]);
@@ -350,7 +350,7 @@ function App() {
               <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>☰</button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigateToPage('shop')}>
                 <img 
-                  src={LOGO_URL} 
+                  src="/logo.png.jpeg" 
                   alt="Gugan Cakes Logo" 
                   onError={(e) => { 
                     e.target.onerror = null; 
