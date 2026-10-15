@@ -191,7 +191,7 @@ function App() {
     setPageInput('');
   };
 
-  // REAL AUTHENTICATED CUSTOMER LOGIN / REGISTER
+  // AUTHENTICATION
   const handleAuthSubmit = (e) => {
     e.preventDefault();
     const cleanEmail = authEmail.trim().toLowerCase();
@@ -218,7 +218,6 @@ function App() {
       setAuthName(''); setAuthPhone(''); setAuthEmail(''); setAuthPassword('');
 
     } else {
-      // LOGIN VALIDATION
       const matchedUser = registeredUsers.find(u => u.email === cleanEmail);
       if (!matchedUser) {
         return alert("Account not found! Please Click 'Register Here' to create a new account.");
@@ -344,17 +343,17 @@ function App() {
       {/* 1. CUSTOMER STOREFRONT */}
       {viewMode === 'customer' ? (
         <div>
-          {/* HEADER WITH LOGO FALLBACK */}
+          {/* HEADER WITH CLEAN LOGO PATH */}
           <header style={{ background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', padding: '12px 20px', position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>☰</button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigateToPage('shop')}>
                 <img 
-                  src="/logo.png.jpeg" 
+                  src="/logo.png" 
                   alt="Gugan Cakes Logo" 
                   onError={(e) => { 
                     e.target.onerror = null; 
-                    e.target.src = '/logo.png'; 
+                    e.target.src = '/logo.png.jpeg'; 
                   }} 
                   style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #d81b60', objectFit: 'cover' }} 
                 />
@@ -538,7 +537,7 @@ function App() {
             )}
           </div>
 
-          {/* SECURED CUSTOMER AUTHENTICATION MODAL */}
+          {/* CUSTOMER AUTHENTICATION MODAL */}
           {isAuthModalOpen && (
             <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', maxWidth: '380px', width: '100%' }}>
@@ -578,7 +577,7 @@ function App() {
             </div>
           )}
 
-          {/* CUSTOMER PROFILE & HISTORY MODAL */}
+          {/* CUSTOMER PROFILE MODAL */}
           {isProfileOpen && currentUser && (
             <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
               <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', maxWidth: '500px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
@@ -664,7 +663,7 @@ function App() {
         </div>
       ) : (
 
-        /* 2. ADMIN DASHBOARD FOR GAYATHRI DEVI */
+        /* 2. ADMIN DASHBOARD */
         <div style={{ maxWidth: '950px', margin: '0 auto', padding: '20px' }}>
           {!isLoggedIn ? (
             <div style={{ maxWidth: '380px', margin: '60px auto', padding: '30px', background: '#fff0f5', borderRadius: '15px', textAlign: 'center' }}>
@@ -685,7 +684,6 @@ function App() {
                 <button onClick={() => { setIsLoggedIn(false); setViewMode('customer'); }} style={{ background: '#333', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px' }}>Exit Admin</button>
               </header>
 
-              {/* DYNAMIC CATEGORIES, OFFERS & MENU BUILDER */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '25px' }}>
                 <div style={{ background: '#fff0f5', padding: '15px', borderRadius: '10px' }}>
                   <h4 style={{ margin: '0 0 8px', color: '#d81b60' }}>Manage Categories 🏷️</h4>
