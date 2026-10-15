@@ -1,3 +1,7 @@
 git add .
 git commit -m "Ensure .gitignore is tracked and trigger fresh build"
 git push origin main
+node_modules
+.vercel
+build
+dist
