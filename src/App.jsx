@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 
-// 🎯 YOUR EXACT GUGAN HOMEMADE CAKES DIRECT LOGO URL
+// 🎯 DIRECT LOGO URL
 const DIRECT_LOGO_URL = "https://i.ibb.co/JwPw7R5v/logo.jpg";
 
 function App() {
@@ -12,12 +12,12 @@ function App() {
   const [customPages, setCustomPages] = useState(['Festival Specials', 'Bulk Gifting']);
   const [ordersList, setOrdersList] = useState([]);
 
-  // Product Inputs (Admin)
+  // Product Inputs (Admin) - Using Description field
   const [editingId, setEditingId] = useState(null);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('1');
-  const [weight, setWeight] = useState('');
+  const [description, setDescription] = useState(''); 
   const [category, setCategory] = useState('');
   const [eggType, setEggType] = useState('Eggless');
   const [imagePreview, setImagePreview] = useState('');
@@ -32,7 +32,7 @@ function App() {
   const [editingPageIndex, setEditingPageIndex] = useState(null);
   const [pageInput, setPageInput] = useState('');
 
-  // Customer UI & Search Navigation
+  // Customer Navigation & UI States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedEggType, setSelectedEggType] = useState('All');
@@ -41,7 +41,7 @@ function App() {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [currentPageView, setCurrentPageView] = useState('shop');
 
-  // Customer Registered Accounts & Persistent Sessions
+  // Customer Account Database & Auth States
   const [registeredUsers, setRegisteredUsers] = useState(() => {
     const saved = localStorage.getItem('ghc_registered_users');
     return saved ? JSON.parse(saved) : [];
@@ -114,25 +114,27 @@ function App() {
     }
   };
 
-  // PRODUCT CRUD
+  // PRODUCT CRUD (Using Description)
   const handleSaveCake = async (e) => {
     e.preventDefault();
-    if (!title || !price || !category || !weight || !imagePreview) return alert("Fill all product details!");
+    if (!title || !price || !category || !description || !imagePreview) {
+      return alert("Please fill all details including the Product Description!");
+    }
 
     try {
       if (editingId) {
         await updateDoc(doc(db, "cakes", editingId), {
-          title, price: Number(price), quantity: Number(quantity), weight, category, eggType, imageUrl: imagePreview
+          title, price: Number(price), quantity: Number(quantity), description, category, eggType, imageUrl: imagePreview
         });
         alert("Product Updated Successfully! ✨");
       } else {
         await addDoc(collection(db, "cakes"), {
-          title, price: Number(price), quantity: Number(quantity), weight, category, eggType, imageUrl: imagePreview
+          title, price: Number(price), quantity: Number(quantity), description, category, eggType, imageUrl: imagePreview
         });
         alert("New Product Added To Menu! 🎂🎉");
       }
 
-      setEditingId(null); setTitle(''); setPrice(''); setQuantity('1'); setWeight(''); setCategory(''); setImagePreview('');
+      setEditingId(null); setTitle(''); setPrice(''); setQuantity('1'); setDescription(''); setCategory(''); setImagePreview('');
       fetchData();
     } catch (err) {
       alert("Error saving item: " + err.message);
@@ -276,20 +278,12 @@ function App() {
   const calculateCourierCharge = () => {
     if (cart.length === 0) return 0;
     const zone = customerInfo.locationZone;
-    const sampleWeight = (cart[0]?.weight || '').toLowerCase();
-
-    let slab = '1/2 kg';
-    if (sampleWeight.includes('250') || sampleWeight.includes('1/4')) slab = '1/4 kg';
-    else if (sampleWeight.includes('1.5')) slab = '1.5 kg';
-    else if (sampleWeight.includes('2')) slab = '2 kg';
-    else if (sampleWeight.includes('1 kg') || sampleWeight.includes('1000')) slab = '1 kg';
-
     const matrix = {
-      'Chennai': { '1/4 kg': 40, '1/2 kg': 60, '1 kg': 80, '1.5 kg': 100, '2 kg': 150 },
-      'Tamil Nadu': { '1/4 kg': 60, '1/2 kg': 80, '1 kg': 100, '1.5 kg': 150, '2 kg': 200 },
-      'AP / KAR / KER': { '1/4 kg': 80, '1/2 kg': 110, '1 kg': 150, '1.5 kg': 190, '2 kg': 230 }
+      'Chennai': 60,
+      'Tamil Nadu': 80,
+      'AP / KAR / KER': 120
     };
-    return matrix[zone]?.[slab] || 60;
+    return matrix[zone] || 60;
   };
 
   const courierCharge = calculateCourierCharge();
@@ -317,7 +311,7 @@ function App() {
       }
     } catch (err) { console.error("Error saving order:", err); }
 
-    let itemsList = cart.map((item, idx) => `${idx + 1}. ${item.title} (${item.weight}) x ${item.qty} = ₹${item.price * item.qty}`).join('\n');
+    let itemsList = cart.map((item, idx) => `${idx + 1}. ${item.title} x ${item.qty} = ₹${item.price * item.qty}`).join('\n');
     const message = `🎂 *NEW ORDER - GUGAN HOMEMADE CAKES* 🎂\n\n👤 *Name:* ${customerInfo.name}\n📞 *Phone:* ${customerInfo.phone}\n🏠 *Address:* ${customerInfo.address}\n📍 *Zone:* ${customerInfo.locationZone}\n\n🛒 *ITEMS:*\n${itemsList}\n\n📦 Subtotal: ₹${cartItemsSubtotal}\n🚚 Courier: ₹${courierCharge}\n💰 *GRAND TOTAL: ₹${grandTotal}*`;
 
     window.open(`https://wa.me/${BUSINESS_PHONE}?text=${encodeURIComponent(message)}`, '_blank');
@@ -344,7 +338,7 @@ function App() {
       {/* 1. CUSTOMER STOREFRONT */}
       {viewMode === 'customer' ? (
         <div>
-          {/* HEADER WITH EXACT DIRECT LOGO URL */}
+          {/* HEADER */}
           <header style={{ background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', padding: '12px 20px', position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>☰</button>
@@ -378,7 +372,7 @@ function App() {
             </div>
           </header>
 
-          {/* SIDEBAR HAMBURGER DRAWER */}
+          {/* SIDEBAR DRAWER */}
           {isSidebarOpen && (
             <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex' }}>
               <div style={{ width: '290px', background: '#fff', height: '100%', padding: '20px', boxSizing: 'border-box', overflowY: 'auto' }}>
@@ -391,7 +385,6 @@ function App() {
                   <div onClick={() => navigateToPage('shop')} style={{ padding: '6px 0', cursor: 'pointer', color: currentPageView === 'shop' ? '#d81b60' : '#333', fontWeight: 'bold' }}>Home</div>
                   <div onClick={() => navigateToPage('shop')} style={{ padding: '6px 0', cursor: 'pointer' }}>Shop</div>
 
-                  {/* MORE DROPDOWN */}
                   <div style={{ borderTop: '1px solid #eee', paddingTop: '8px' }}>
                     <div onClick={() => setIsMoreOpen(!isMoreOpen)} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', cursor: 'pointer', fontWeight: 'bold' }}>
                       <span>More</span>
@@ -413,7 +406,6 @@ function App() {
                     )}
                   </div>
 
-                  {/* CATEGORIES DROPDOWN */}
                   <div style={{ borderTop: '1px solid #eee', paddingTop: '8px' }}>
                     <div onClick={() => setIsCategoriesOpen(!isCategoriesOpen)} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', cursor: 'pointer', fontWeight: 'bold' }}>
                       <span>Categories</span>
@@ -429,7 +421,6 @@ function App() {
                     )}
                   </div>
 
-                  {/* LOGIN / REGISTER IN DRAWER */}
                   <div style={{ borderTop: '1px solid #eee', paddingTop: '15px', marginTop: '10px' }}>
                     {!currentUser ? (
                       <button onClick={() => { setIsAuthModalOpen(true); setIsSidebarOpen(false); }} style={{ width: '100%', background: '#d81b60', color: 'white', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
@@ -492,7 +483,10 @@ function App() {
                         <div>
                           <img src={cake.imageUrl} alt={cake.title} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '8px' }} />
                           <h4 style={{ margin: '8px 0 4px', fontSize: '16px' }}>{cake.title}</h4>
-                          <p style={{ color: '#888', fontSize: '12px' }}>Weight: {cake.weight}</p>
+                          {/* 💡 PRODUCT DESCRIPTION DISPLAY */}
+                          <p style={{ color: '#666', fontSize: '12px', lineHeight: '1.4', margin: '4px 0 8px', minHeight: '32px' }}>
+                            {cake.description || cake.weight || 'Freshly baked homemade treat.'}
+                          </p>
                         </div>
                         <div>
                           <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#d81b60', margin: '8px 0' }}>₹{cake.price}</div>
@@ -624,7 +618,7 @@ function App() {
               {cart.map(item => (
                 <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #eee' }}>
                   <div>
-                    <h5 style={{ margin: 0 }}>{item.title} ({item.weight})</h5>
+                    <h5 style={{ margin: 0 }}>{item.title}</h5>
                     <span style={{ color: '#d81b60', fontWeight: 'bold' }}>₹{item.price * item.qty}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -642,9 +636,9 @@ function App() {
                 <textarea placeholder="Address *" required value={customerInfo.address} onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})} style={{ padding: '8px' }}></textarea>
 
                 <select value={customerInfo.locationZone} onChange={e => setCustomerInfo({...customerInfo, locationZone: e.target.value})} style={{ padding: '8px' }}>
-                  <option value="Chennai">Chennai Zone</option>
-                  <option value="Tamil Nadu">Rest of Tamil Nadu</option>
-                  <option value="AP / KAR / KER">AP / Karnataka / Kerala</option>
+                  <option value="Chennai">Chennai Zone (₹60)</option>
+                  <option value="Tamil Nadu">Rest of Tamil Nadu (₹80)</option>
+                  <option value="AP / KAR / KER">AP / Karnataka / Kerala (₹120)</option>
                 </select>
 
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#d81b60', marginTop: '5px' }}>
@@ -660,7 +654,7 @@ function App() {
         </div>
       ) : (
 
-        /* 2. ADMIN DASHBOARD FOR GAYATHRI DEVI */
+        /* 2. ADMIN DASHBOARD (DESCRIPTION INPUT FORM) */
         <div style={{ maxWidth: '950px', margin: '0 auto', padding: '20px' }}>
           {!isLoggedIn ? (
             <div style={{ maxWidth: '380px', margin: '60px auto', padding: '30px', background: '#fff0f5', borderRadius: '15px', textAlign: 'center' }}>
@@ -740,22 +734,28 @@ function App() {
                 </div>
               </div>
 
-              {/* PRODUCT CREATION FORM */}
+              {/* PRODUCT CREATION FORM WITH DESCRIPTION INPUT */}
               <div style={{ background: '#fff0f5', padding: '20px', borderRadius: '12px', marginBottom: '25px' }}>
                 <h3 style={{ color: '#c2185b', marginTop: 0 }}>{editingId ? 'Edit Product Details ✏️' : 'Add New Cake / Product ➕'}</h3>
                 <form onSubmit={handleSaveCake} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <input type="text" placeholder="Product Title" value={title} onChange={e => setTitle(e.target.value)} style={{ padding: '8px' }} />
-                    <input type="number" placeholder="Price (₹)" value={price} onChange={e => setPrice(e.target.value)} style={{ padding: '8px' }} />
+                    <input type="text" placeholder="Product Title *" value={title} onChange={e => setTitle(e.target.value)} style={{ padding: '8px' }} />
+                    <input type="number" placeholder="Price (₹) *" value={price} onChange={e => setPrice(e.target.value)} style={{ padding: '8px' }} />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                    <input type="text" placeholder="Category" value={category} onChange={e => setCategory(e.target.value)} style={{ padding: '8px' }} />
-                    <input type="text" placeholder="Weight / Grams" value={weight} onChange={e => setWeight(e.target.value)} style={{ padding: '8px' }} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <input type="text" placeholder="Category *" value={category} onChange={e => setCategory(e.target.value)} style={{ padding: '8px' }} />
                     <select value={eggType} onChange={e => setEggType(e.target.value)} style={{ padding: '8px' }}>
                       <option value="Eggless">Eggless 🌱</option>
                       <option value="Contains Egg">Contains Egg 🥚</option>
                     </select>
                   </div>
+                  {/* 💡 DESCRIPTION TEXTAREA */}
+                  <textarea 
+                    placeholder="Product Description / Ingredients / Notes (e.g., Belgian Chocolate, Custom Photo Cake) *" 
+                    value={description} 
+                    onChange={e => setDescription(e.target.value)} 
+                    style={{ padding: '8px', minHeight: '60px' }} 
+                  />
                   <input type="file" accept="image/*" onChange={handleImageChange} />
                   {imagePreview && <img src={imagePreview} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px' }} />}
                   <button type="submit" style={{ background: '#4CAF50', color: 'white', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold' }}>Save Product</button>
@@ -784,9 +784,10 @@ function App() {
                   <div key={cake.id} style={{ border: '1px solid #eee', borderRadius: '8px', padding: '8px', background: '#fff', textAlign: 'center' }}>
                     <img src={cake.imageUrl} alt={cake.title} style={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: '6px' }} />
                     <h5 style={{ margin: '6px 0 2px' }}>{cake.title}</h5>
-                    <div style={{ fontSize: '12px', color: '#d81b60', fontWeight: 'bold' }}>₹{cake.price} ({cake.weight})</div>
+                    <div style={{ fontSize: '11px', color: '#666', margin: '2px 0' }}>{cake.description || cake.weight}</div>
+                    <div style={{ fontSize: '12px', color: '#d81b60', fontWeight: 'bold' }}>₹{cake.price}</div>
                     <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
-                      <button onClick={() => { setEditingId(cake.id); setTitle(cake.title); setPrice(cake.price); setWeight(cake.weight); setCategory(cake.category); setImagePreview(cake.imageUrl); }} style={{ flex: 1, background: '#2196F3', color: 'white', border: 'none', padding: '4px', borderRadius: '4px', fontSize: '11px' }}>Edit ✏️</button>
+                      <button onClick={() => { setEditingId(cake.id); setTitle(cake.title); setPrice(cake.price); setDescription(cake.description || cake.weight || ''); setCategory(cake.category); setImagePreview(cake.imageUrl); }} style={{ flex: 1, background: '#2196F3', color: 'white', border: 'none', padding: '4px', borderRadius: '4px', fontSize: '11px' }}>Edit ✏️</button>
                       <button onClick={() => handleDeleteCake(cake.id, cake.title)} style={{ flex: 1, background: '#ff4d4d', color: 'white', border: 'none', padding: '4px', borderRadius: '4px', fontSize: '11px' }}>Delete 🗑️</button>
                     </div>
                   </div>
