@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, getDocs, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 
-// 🎯 DIRECT LOGO URL
 const DIRECT_LOGO_URL = "https://i.ibb.co/JwPw7R5v/logo.jpg";
 
 function App() {
@@ -12,7 +11,7 @@ function App() {
   const [customPages, setCustomPages] = useState(['Festival Specials', 'Bulk Gifting']);
   const [ordersList, setOrdersList] = useState([]);
 
-  // Product Inputs (Admin) - Using Description field
+  // Product Inputs (Admin) - Added deliverableZones state
   const [editingId, setEditingId] = useState(null);
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
@@ -21,6 +20,11 @@ function App() {
   const [category, setCategory] = useState('');
   const [eggType, setEggType] = useState('Eggless');
   const [imagePreview, setImagePreview] = useState('');
+  const [deliverableZones, setDeliverableZones] = useState({
+    'Chennai': true,
+    'Tamil Nadu': true,
+    'AP / KAR / KER': true
+  });
 
   // Admin Dynamic Custom Fields
   const [editingCatIndex, setEditingCatIndex] = useState(null);
@@ -52,7 +56,7 @@ function App() {
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+  const [authMode, setAuthMode] = useState('login');
   const [authName, setAuthName] = useState('');
   const [authPhone, setAuthPhone] = useState('');
   const [authEmail, setAuthEmail] = useState('');
@@ -67,7 +71,7 @@ function App() {
     name: '', phone: '', address: '', locationZone: 'Chennai', notes: '' 
   });
 
-  // Mode Toggle (Default Customer View)
+  // Mode Toggle
   const [viewMode, setViewMode] = useState('customer');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
@@ -114,27 +118,48 @@ function App() {
     }
   };
 
-  // PRODUCT CRUD (Using Description)
+  const handleZoneCheckChange = (zone) => {
+    setDeliverableZones(prev => ({
+      ...prev,
+      [zone]: !prev[zone]
+    }));
+  };
+
+  // PRODUCT CRUD
   const handleSaveCake = async (e) => {
     e.preventDefault();
     if (!title || !price || !category || !description || !imagePreview) {
-      return alert("Please fill all details including the Product Description!");
+      return alert("Please fill all details including Description!");
     }
 
     try {
+      const productPayload = {
+        title, 
+        price: Number(price), 
+        quantity: Number(quantity), 
+        description, 
+        category, 
+        eggType, 
+        imageUrl: imagePreview,
+        deliverableZones
+      };
+
       if (editingId) {
-        await updateDoc(doc(db, "cakes", editingId), {
-          title, price: Number(price), quantity: Number(quantity), description, category, eggType, imageUrl: imagePreview
-        });
+        await updateDoc(doc(db, "cakes", editingId), productPayload);
         alert("Product Updated Successfully! ✨");
       } else {
-        await addDoc(collection(db, "cakes"), {
-          title, price: Number(price), quantity: Number(quantity), description, category, eggType, imageUrl: imagePreview
-        });
+        await addDoc(collection(db, "cakes"), productPayload);
         alert("New Product Added To Menu! 🎂🎉");
       }
 
-      setEditingId(null); setTitle(''); setPrice(''); setQuantity('1'); setDescription(''); setCategory(''); setImagePreview('');
+      setEditingId(null); 
+      setTitle(''); 
+      setPrice(''); 
+      setQuantity('1'); 
+      setDescription(''); 
+      setCategory(''); 
+      setImagePreview('');
+      setDeliverableZones({ 'Chennai': true, 'Tamil Nadu': true, 'AP / KAR / KER': true });
       fetchData();
     } catch (err) {
       alert("Error saving item: " + err.message);
@@ -259,7 +284,7 @@ function App() {
     });
   };
 
-  // CART & COURIER CALCULATION
+  // CART & CHECKOUT VALIDATIONS
   const addToCart = (cake) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === cake.id);
@@ -286,6 +311,12 @@ function App() {
     return matrix[zone] || 60;
   };
 
+  // Check if any cart item is undeliverable to the selected zone
+  const undeliverableItems = cart.filter(item => {
+    if (!item.deliverableZones) return false;
+    return item.deliverableZones[customerInfo.locationZone] === false;
+  });
+
   const courierCharge = calculateCourierCharge();
   const grandTotal = cartItemsSubtotal + courierCharge;
 
@@ -293,6 +324,10 @@ function App() {
     e.preventDefault();
     if (cart.length === 0) return alert("Your cart is empty!");
     if (!customerInfo.name || !customerInfo.phone || !customerInfo.address) return alert("Please fill contact details!");
+    
+    if (undeliverableItems.length > 0) {
+      return alert(`Some items in your cart are not deliverable to ${customerInfo.locationZone}. Please remove them to proceed.`);
+    }
 
     const orderData = {
       customerName: customerInfo.name, phone: customerInfo.phone, address: customerInfo.address,
@@ -338,7 +373,6 @@ function App() {
       {/* 1. CUSTOMER STOREFRONT */}
       {viewMode === 'customer' ? (
         <div>
-          {/* HEADER */}
           <header style={{ background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', padding: '12px 20px', position: 'sticky', top: 0, zIndex: 100, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
               <button onClick={() => setIsSidebarOpen(true)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>☰</button>
@@ -475,6 +509,8 @@ function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
                   {filteredCakes.map(cake => {
                     const isFav = wishlist.some(w => w.id === cake.id);
+                    const availZones = cake.deliverableZones ? Object.keys(cake.deliverableZones).filter(z => cake.deliverableZones[z]) : ['Chennai', 'Tamil Nadu', 'AP / KAR / KER'];
+
                     return (
                       <div key={cake.id} style={{ background: '#fff', borderRadius: '12px', padding: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative' }}>
                         <button onClick={() => toggleWishlist(cake)} style={{ position: 'absolute', top: '18px', right: '18px', background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px' }}>
@@ -483,10 +519,12 @@ function App() {
                         <div>
                           <img src={cake.imageUrl} alt={cake.title} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '8px' }} />
                           <h4 style={{ margin: '8px 0 4px', fontSize: '16px' }}>{cake.title}</h4>
-                          {/* 💡 PRODUCT DESCRIPTION DISPLAY */}
-                          <p style={{ color: '#666', fontSize: '12px', lineHeight: '1.4', margin: '4px 0 8px', minHeight: '32px' }}>
-                            {cake.description || cake.weight || 'Freshly baked homemade treat.'}
+                          <p style={{ color: '#666', fontSize: '12px', lineHeight: '1.4', margin: '4px 0 6px', minHeight: '32px' }}>
+                            {cake.description || 'Freshly baked homemade treat.'}
                           </p>
+                          <div style={{ fontSize: '11px', color: '#888', background: '#f9f9f9', padding: '4px 8px', borderRadius: '4px', marginBottom: '8px' }}>
+                            📍 Deliverable: {availZones.join(', ')}
+                          </div>
                         </div>
                         <div>
                           <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#d81b60', margin: '8px 0' }}>₹{cake.price}</div>
@@ -607,7 +645,7 @@ function App() {
             </div>
           )}
 
-          {/* CART DRAWER */}
+          {/* CART DRAWER WITH ZONE AVAILABILITY CHECK */}
           {isCartOpen && (
             <div style={{ position: 'fixed', top: 0, right: 0, width: '100%', maxWidth: '420px', height: '100vh', background: '#fff', boxShadow: '-5px 0 25px rgba(0,0,0,0.2)', padding: '20px', zIndex: 1000, overflowY: 'auto', boxSizing: 'border-box' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
@@ -615,19 +653,30 @@ function App() {
                 <button onClick={() => setIsCartOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
               </div>
 
-              {cart.map(item => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #eee' }}>
-                  <div>
-                    <h5 style={{ margin: 0 }}>{item.title}</h5>
-                    <span style={{ color: '#d81b60', fontWeight: 'bold' }}>₹{item.price * item.qty}</span>
+              {cart.map(item => {
+                const isItemUndeliverable = item.deliverableZones && item.deliverableZones[customerInfo.locationZone] === false;
+
+                return (
+                  <div key={item.id} style={{ padding: '10px 0', borderBottom: '1px solid #eee' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div>
+                        <h5 style={{ margin: 0 }}>{item.title}</h5>
+                        <span style={{ color: '#d81b60', fontWeight: 'bold' }}>₹{item.price * item.qty}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <button onClick={() => updateQty(item.id, -1)}>-</button>
+                        <span>{item.qty}</span>
+                        <button onClick={() => updateQty(item.id, 1)}>+</button>
+                      </div>
+                    </div>
+                    {isItemUndeliverable && (
+                      <div style={{ color: 'red', fontSize: '11px', fontWeight: 'bold', marginTop: '4px' }}>
+                        ⚠️ Not deliverable to {customerInfo.locationZone}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <button onClick={() => updateQty(item.id, -1)}>-</button>
-                    <span>{item.qty}</span>
-                    <button onClick={() => updateQty(item.id, 1)}>+</button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
 
               <form onSubmit={handleCheckoutWhatsApp} style={{ marginTop: '20px', background: '#fff0f5', padding: '15px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <h4 style={{ margin: 0, color: '#c2185b' }}>Delivery Details 🚚</h4>
@@ -635,17 +684,36 @@ function App() {
                 <input type="tel" placeholder="Phone Number *" required value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} style={{ padding: '8px' }} />
                 <textarea placeholder="Address *" required value={customerInfo.address} onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})} style={{ padding: '8px' }}></textarea>
 
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#555' }}>Select Location Zone:</label>
                 <select value={customerInfo.locationZone} onChange={e => setCustomerInfo({...customerInfo, locationZone: e.target.value})} style={{ padding: '8px' }}>
                   <option value="Chennai">Chennai Zone (₹60)</option>
                   <option value="Tamil Nadu">Rest of Tamil Nadu (₹80)</option>
                   <option value="AP / KAR / KER">AP / Karnataka / Kerala (₹120)</option>
                 </select>
 
+                {undeliverableItems.length > 0 && (
+                  <div style={{ background: '#ffebee', border: '1px solid #ffcdd2', color: '#c62828', padding: '8px', borderRadius: '6px', fontSize: '12px' }}>
+                    🚨 Remove items marked as unavailable for {customerInfo.locationZone} to proceed!
+                  </div>
+                )}
+
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#d81b60', marginTop: '5px' }}>
                   Grand Total: ₹{grandTotal} (Courier: ₹{courierCharge})
                 </div>
 
-                <button type="submit" style={{ background: '#25D366', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                <button 
+                  type="submit" 
+                  disabled={undeliverableItems.length > 0} 
+                  style={{ 
+                    background: undeliverableItems.length > 0 ? '#ccc' : '#25D366', 
+                    color: 'white', 
+                    border: 'none', 
+                    padding: '12px', 
+                    borderRadius: '8px', 
+                    fontWeight: 'bold', 
+                    cursor: undeliverableItems.length > 0 ? 'not-allowed' : 'pointer' 
+                  }}
+                >
                   Order via WhatsApp 💬
                 </button>
               </form>
@@ -654,7 +722,7 @@ function App() {
         </div>
       ) : (
 
-        /* 2. ADMIN DASHBOARD (DESCRIPTION INPUT FORM) */
+        /* 2. ADMIN DASHBOARD WITH DELIVERABLE ZONE CHECKBOXES */
         <div style={{ maxWidth: '950px', margin: '0 auto', padding: '20px' }}>
           {!isLoggedIn ? (
             <div style={{ maxWidth: '380px', margin: '60px auto', padding: '30px', background: '#fff0f5', borderRadius: '15px', textAlign: 'center' }}>
@@ -734,7 +802,7 @@ function App() {
                 </div>
               </div>
 
-              {/* PRODUCT CREATION FORM WITH DESCRIPTION INPUT */}
+              {/* PRODUCT FORM WITH DELIVERABLE ZONE CHECKBOXES */}
               <div style={{ background: '#fff0f5', padding: '20px', borderRadius: '12px', marginBottom: '25px' }}>
                 <h3 style={{ color: '#c2185b', marginTop: 0 }}>{editingId ? 'Edit Product Details ✏️' : 'Add New Cake / Product ➕'}</h3>
                 <form onSubmit={handleSaveCake} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -749,13 +817,44 @@ function App() {
                       <option value="Contains Egg">Contains Egg 🥚</option>
                     </select>
                   </div>
-                  {/* 💡 DESCRIPTION TEXTAREA */}
+
                   <textarea 
-                    placeholder="Product Description / Ingredients / Notes (e.g., Belgian Chocolate, Custom Photo Cake) *" 
+                    placeholder="Product Description / Ingredients / Notes *" 
                     value={description} 
                     onChange={e => setDescription(e.target.value)} 
                     style={{ padding: '8px', minHeight: '60px' }} 
                   />
+
+                  {/* 💡 DELIVERABLE ZONES SELECTION */}
+                  <div style={{ background: '#fff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #f8bbd0' }}>
+                    <label style={{ fontWeight: 'bold', fontSize: '13px', color: '#d81b60', display: 'block', marginBottom: '6px' }}>
+                      Deliverable Zones (Uncheck if unavailable for a specific zone):
+                    </label>
+                    <div style={{ display: 'flex', gap: '20px', fontSize: '13px' }}>
+                      <label style={{ cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={deliverableZones['Chennai']} 
+                          onChange={() => handleZoneCheckChange('Chennai')} 
+                        /> Chennai Zone
+                      </label>
+                      <label style={{ cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={deliverableZones['Tamil Nadu']} 
+                          onChange={() => handleZoneCheckChange('Tamil Nadu')} 
+                        /> Rest of Tamil Nadu
+                      </label>
+                      <label style={{ cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={deliverableZones['AP / KAR / KER']} 
+                          onChange={() => handleZoneCheckChange('AP / KAR / KER')} 
+                        /> AP / KAR / KER
+                      </label>
+                    </div>
+                  </div>
+
                   <input type="file" accept="image/*" onChange={handleImageChange} />
                   {imagePreview && <img src={imagePreview} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px' }} />}
                   <button type="submit" style={{ background: '#4CAF50', color: 'white', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold' }}>Save Product</button>
@@ -784,10 +883,23 @@ function App() {
                   <div key={cake.id} style={{ border: '1px solid #eee', borderRadius: '8px', padding: '8px', background: '#fff', textAlign: 'center' }}>
                     <img src={cake.imageUrl} alt={cake.title} style={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: '6px' }} />
                     <h5 style={{ margin: '6px 0 2px' }}>{cake.title}</h5>
-                    <div style={{ fontSize: '11px', color: '#666', margin: '2px 0' }}>{cake.description || cake.weight}</div>
+                    <div style={{ fontSize: '11px', color: '#666', margin: '2px 0' }}>{cake.description}</div>
                     <div style={{ fontSize: '12px', color: '#d81b60', fontWeight: 'bold' }}>₹{cake.price}</div>
                     <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
-                      <button onClick={() => { setEditingId(cake.id); setTitle(cake.title); setPrice(cake.price); setDescription(cake.description || cake.weight || ''); setCategory(cake.category); setImagePreview(cake.imageUrl); }} style={{ flex: 1, background: '#2196F3', color: 'white', border: 'none', padding: '4px', borderRadius: '4px', fontSize: '11px' }}>Edit ✏️</button>
+                      <button 
+                        onClick={() => { 
+                          setEditingId(cake.id); 
+                          setTitle(cake.title); 
+                          setPrice(cake.price); 
+                          setDescription(cake.description || ''); 
+                          setCategory(cake.category); 
+                          setImagePreview(cake.imageUrl); 
+                          if (cake.deliverableZones) setDeliverableZones(cake.deliverableZones);
+                        }} 
+                        style={{ flex: 1, background: '#2196F3', color: 'white', border: 'none', padding: '4px', borderRadius: '4px', fontSize: '11px' }}
+                      >
+                        Edit ✏️
+                      </button>
                       <button onClick={() => handleDeleteCake(cake.id, cake.title)} style={{ flex: 1, background: '#ff4d4d', color: 'white', border: 'none', padding: '4px', borderRadius: '4px', fontSize: '11px' }}>Delete 🗑️</button>
                     </div>
                   </div>
